@@ -166,7 +166,7 @@ Environment variables can be set in a `.env` file (see `.env.example`):
 
 - `DATABASE_URL` - Database connection string (default: `sqlite:///./test.db`)
 - `APP_NAME` - Application name
-- `DEBUG` - Debug mode (default: `True`)
+- `DEBUG` - Debug mode (default: `False`)
 
 ## License
 
