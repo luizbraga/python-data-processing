@@ -43,8 +43,9 @@ Backend application that processes data using modern API development practices w
 
 - Python 3.11 or higher
 - pip
+- Docker and Docker Compose (optional, for containerized deployment)
 
-### Installation
+#### Local Development
 
 1. Clone the repository:
 ```bash
@@ -73,12 +74,43 @@ cp .env.example .env
 alembic upgrade head
 ```
 
+#### Docker Deployment
+
+1. Clone the repository:
+```bash
+git clone https://github.com/luizbraga/python-data-processing.git
+cd python-data-processing
+```
+
+2. Build the Docker image:
+```bash
+docker build -t python-data-processing .
+```
+
+3. Run the container:
+```bash
+docker run -p 8000:8000 --env-file .env python-data-processing
+```
+
+Or with docker-compose:
+```bash
+docker-compose up
+```
+
+The API will be available at `http://localhost:8000`
+
 ## Usage
 
 ### Running the Development Server
 
+#### Local
 ```bash
 uvicorn app.main:app --reload
+```
+
+#### Docker
+```bash
+docker run -p 8000:8000 python-data-processing
 ```
 
 The API will be available at `http://localhost:8000`
@@ -130,13 +162,6 @@ Rollback migration:
 ```bash
 alembic downgrade -1
 ```
-
-## API Endpoints
-
-- `GET /` - Welcome message
-- `GET /health` - Health check endpoint
-- `GET /items` - Get all items
-- `POST /items` - Create a new item
 
 ## Development
 
