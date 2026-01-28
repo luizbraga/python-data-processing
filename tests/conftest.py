@@ -52,6 +52,7 @@ Usage in Tests:
 """
 
 from typing import Generator
+from unittest.mock import Mock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -62,6 +63,7 @@ from sqlalchemy.pool import StaticPool
 from app.core.db import Base, get_db
 from app.main import app
 from app.models.patients import Patient  # noqa: F401 - Import models to register them
+from app.routes.patients import get_patient_service
 
 # Shared in-memory SQLite for tests
 engine = create_engine(
@@ -101,6 +103,23 @@ def client(db_session: Session) -> Generator[TestClient, None, None]:
     with TestClient(app) as test_client:
         yield test_client
 
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def mock_patient_service() -> Mock:
+    """Create a mock PatientService"""
+    return Mock()
+
+
+@pytest.fixture
+def client_with_mock_service(
+    mock_patient_service: Mock,
+) -> Generator[TestClient, None, None]:
+    """Create a test client with mocked service"""
+    app.dependency_overrides[get_patient_service] = lambda: mock_patient_service
+    with TestClient(app) as test_client:
+        yield test_client
     app.dependency_overrides.clear()
 
 
