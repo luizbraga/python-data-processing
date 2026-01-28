@@ -1,13 +1,15 @@
 """Alembic environment configuration."""
+
 from logging.config import fileConfig
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+
+from sqlalchemy import engine_from_config, pool
+
 from alembic import context
+from app.config import settings
 
 # Import your models here to allow autogenerate to detect changes
-from app.database import Base
-from app.models import Item  # noqa: F401
-from app.config import settings
+from app.core.db import Base
+from app.models.patients import Patient  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
