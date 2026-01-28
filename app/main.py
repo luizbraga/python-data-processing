@@ -1,10 +1,11 @@
 """Main FastAPI application."""
 
-from fastapi import FastAPI, Depends, HTTPException
-from sqlalchemy.orm import Session
-from sqlalchemy.exc import SQLAlchemyError
 from typing import Any
+
+from fastapi import Depends, FastAPI, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
@@ -39,7 +40,7 @@ def read_root() -> dict[str, str]:
 @app.get("/health")
 def health_check() -> dict[str, str]:
     """Health check endpoint."""
-    return {"status": "healthy"}
+    return {"status": "ok"}
 
 
 @app.get("/items", response_model=list[ItemResponse])
