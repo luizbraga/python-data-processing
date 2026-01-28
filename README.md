@@ -16,25 +16,34 @@ Backend application that processes data using modern API development practices w
 ## Project Structure
 
 ```
-├── app/                    # Application source code
+├── app/                   # Application source code
 │   ├── __init__.py
 │   ├── main.py            # FastAPI application and routes
 │   ├── config.py          # Application settings
-│   ├── database.py        # Database configuration
-│   └── models.py          # SQLAlchemy models
+│   ├── core/              # Core functionality
+│   ├── models/            # SQLAlchemy models
+│   ├── routes/            # API route handlers
+│   └── schemas/           # Pydantic schemas
 ├── tests/                 # Test files
 │   ├── __init__.py
 │   ├── conftest.py        # Test fixtures
 │   └── test_main.py       # API tests
 ├── alembic/               # Database migrations
 │   ├── versions/          # Migration scripts
-│   └── env.py            # Alembic environment
-├── .github/workflows/     # CI/CD workflows
-│   └── code-quality.yml   # Black and MyPy checks
+│   ├── env.py             # Alembic environment
+│   └── script.py.mako     # Migration template
+├── .vscode/               # VS Code settings
+│   └── settings.json
+├── Dockerfile             # Docker container configuration
+├── docker-compose.yml     # Docker Compose orchestration
 ├── requirements.txt       # Python dependencies
-├── pyproject.toml        # Tool configurations
-├── alembic.ini           # Alembic configuration
-└── .env.example          # Example environment variables
+├── pyproject.toml         # Tool configurations
+├── alembic.ini            # Alembic configuration
+├── .env.example           # Example environment variables
+├── .env                   # Environment variables (not in git)
+├── test.db                # SQLite database (development)
+├── LICENSE                # License file
+└── README.md 
 ```
 
 ## Setup
