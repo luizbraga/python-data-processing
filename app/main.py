@@ -1,14 +1,12 @@
 """Main FastAPI application."""
+
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
-from typing import List
+from typing import Any
+from pydantic import BaseModel, ConfigDict
 
 from app.config import settings
-from app.database import get_db, engine, Base
-from pydantic import BaseModel
-
-# Create database tables
-Base.metadata.create_all(bind=engine)
+from app.database import get_db
 
 app = FastAPI(title=settings.app_name, debug=settings.debug)
 
@@ -23,12 +21,11 @@ class ItemCreate(BaseModel):
 class ItemResponse(BaseModel):
     """Pydantic model for item response."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     name: str
     description: str | None = None
-
-    class Config:
-        from_attributes = True
 
 
 @app.get("/")
@@ -43,8 +40,8 @@ def health_check() -> dict[str, str]:
     return {"status": "healthy"}
 
 
-@app.get("/items", response_model=List[ItemResponse])
-def get_items(db: Session = Depends(get_db)) -> List[ItemResponse]:
+@app.get("/items", response_model=list[ItemResponse])
+def get_items(db: Session = Depends(get_db)) -> Any:
     """Get all items."""
     from app.models import Item
 
@@ -53,7 +50,7 @@ def get_items(db: Session = Depends(get_db)) -> List[ItemResponse]:
 
 
 @app.post("/items", response_model=ItemResponse)
-def create_item(item: ItemCreate, db: Session = Depends(get_db)) -> ItemResponse:
+def create_item(item: ItemCreate, db: Session = Depends(get_db)) -> Any:
     """Create a new item."""
     from app.models import Item
 
