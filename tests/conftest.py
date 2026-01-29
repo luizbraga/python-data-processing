@@ -127,10 +127,8 @@ def client_with_mock_service(
 def sample_patient(db_session: Session) -> Patient:
     """Create a sample patient for testing."""
     patient = Patient(
-        first_name="John",
-        last_name="Doe",
+        name="John Doe",
         date_of_birth="1990-01-15",
-        medical_record_number="MRN001234",
     )
     db_session.add(patient)
     db_session.commit()
@@ -143,22 +141,18 @@ def sample_patients(db_session: Session) -> list[Patient]:
     """Create multiple patients for testing list operations."""
     patients = [
         Patient(
-            first_name="Alice",
-            last_name="Smith",
+            name="Alice Johnson",
             date_of_birth="1985-03-20",
             medical_record_number="MRN001001",
         ),
         Patient(
-            first_name="Bob",
-            last_name="Johnson",
+            name="Bob Smith",
             date_of_birth="1992-07-10",
             medical_record_number="MRN001002",
         ),
         Patient(
-            first_name="Carol",
-            last_name="Williams",
+            name="Carol Williams",
             date_of_birth="1988-11-05",
-            medical_record_number="MRN001003",
         ),
     ]
     db_session.add_all(patients)
@@ -172,8 +166,6 @@ def sample_patients(db_session: Session) -> list[Patient]:
 def patient_data() -> dict:
     """Provide valid patient data dict for create/update operations."""
     return {
-        "first_name": "Jane",
-        "last_name": "Smith",
+        "name": "Jane Smith",
         "date_of_birth": "1995-06-15",
-        "medical_record_number": "MRN999999",
     }

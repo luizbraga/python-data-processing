@@ -13,24 +13,18 @@ class TestPatientsGetRoutes:
             "items": [
                 Patient(
                     id=1,
-                    first_name="John",
-                    last_name="Doe",
+                    name="John Doe",
                     date_of_birth="1990-01-15",
-                    medical_record_number="MRN001234",
                 ),
                 Patient(
                     id=2,
-                    first_name="Jane",
-                    last_name="Smith",
+                    name="Jane Smith",
                     date_of_birth="1985-07-30",
-                    medical_record_number="MRN001235",
                 ),
                 Patient(
                     id=3,
-                    first_name="Alice",
-                    last_name="Johnson",
+                    name="Alice Johnson",
                     date_of_birth="1978-11-22",
-                    medical_record_number="MRN001236",
                 ),
             ],
             "total": 3,
@@ -48,10 +42,8 @@ class TestPatientsGetRoutes:
     ) -> None:
         patient = Patient(
             id=1,
-            first_name="John",
-            last_name="Doe",
+            name="John Doe",
             date_of_birth="1990-01-15",
-            medical_record_number="MRN001234",
         )
         mock_patient_service.get_patient.return_value = patient
         response = client_with_mock_service.get(f"/patients/{patient.id}")
@@ -59,7 +51,7 @@ class TestPatientsGetRoutes:
         mock_patient_service.get_patient.assert_called_once_with(patient.id)
         assert response.status_code == 200
         assert response.json()["id"] == patient.id
-        assert response.json()["first_name"] == patient.first_name
+        assert response.json()["name"] == patient.name
 
     def test_get_patient_not_found(
         self, client_with_mock_service: TestClient, mock_patient_service: Mock
@@ -76,10 +68,8 @@ class TestPatientsCreateRoutes:
         self, client_with_mock_service: TestClient, mock_patient_service: Mock
     ) -> None:
         patient_data = {
-            "first_name": "John",
-            "last_name": "Doe",
+            "name": "John Doe",
             "date_of_birth": "1990-01-15",
-            "medical_record_number": "MRN001234",
         }
         mock_patient_service.create_patient.return_value = Patient(id=1, **patient_data)
         response = client_with_mock_service.post("/patients/", json=patient_data)
@@ -88,18 +78,15 @@ class TestPatientsCreateRoutes:
         assert (
             response.json()["id"] == mock_patient_service.create_patient.return_value.id
         )
-        assert response.json()["first_name"] == patient_data["first_name"]
-        assert response.json()["last_name"] == patient_data["last_name"]
+        assert response.json()["name"] == patient_data["name"]
         assert response.json()["date_of_birth"] == patient_data["date_of_birth"]
 
     def test_create_patient_invalid_data(
         self, client_with_mock_service: TestClient, mock_patient_service: Mock
     ) -> None:
         invalid_data = {
-            "first_name": "",
-            "last_name": "",
+            "name": "",
             "date_of_birth": "invalid-date",
-            "medical_record_number": "",
         }
         response = client_with_mock_service.post("/patients/", json=invalid_data)
         mock_patient_service.create_patient.assert_not_called()
@@ -113,10 +100,8 @@ class TestPatientsUpdateRoutes:
         patient_id = 1
 
         updated_data = {
-            "first_name": "Bob",
-            "last_name": "Smith Jr.",
+            "name": "Bob Smith Jr.",
             "date_of_birth": "1983-04-12",
-            "medical_record_number": "MRN001236",
         }
         mock_patient_service.update_patient.return_value = Patient(
             id=patient_id, **updated_data
@@ -128,17 +113,14 @@ class TestPatientsUpdateRoutes:
             patient_id, updated_data
         )
         assert response.status_code == 200
-        assert response.json()["first_name"] == updated_data["first_name"]
-        assert response.json()["last_name"] == updated_data["last_name"]
+        assert response.json()["name"] == updated_data["name"]
 
     def test_update_patient_not_found(
         self, client_with_mock_service: TestClient, mock_patient_service: Mock
     ) -> None:
         updated_data = {
-            "first_name": "Non Existent",
-            "last_name": "Person",
+            "name": "Non Existent",
             "date_of_birth": "1970-01-01",
-            "medical_record_number": "MRN000000",
         }
         mock_patient_service.update_patient.return_value = None
         response = client_with_mock_service.put("/patients/999999", json=updated_data)
