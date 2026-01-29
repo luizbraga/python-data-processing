@@ -1,6 +1,6 @@
-from typing import Any
+from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi_pagination import Page
 from sqlalchemy.orm import Session
 
@@ -19,8 +19,12 @@ def get_patient_service(db: Session = Depends(get_db)) -> PatientService:
 @router.get("/", response_model=Page[PatientRead])
 def read_patients(
     service: PatientService = Depends(get_patient_service),
+    sort: Optional[str] = Query(
+        None, description="Sort by field", examples=["name", "-name"]
+    ),
+    name: Optional[str] = Query(None, description="Filter by patient name"),
 ) -> Page[Patient] | Any:
-    patients = service.list_patients()
+    patients = service.list_patients(sort_by=sort, name_filter=name)
     return patients
 
 

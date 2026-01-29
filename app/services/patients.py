@@ -2,7 +2,7 @@ import logging
 from typing import Any
 
 from fastapi_pagination.ext.sqlalchemy import paginate
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models.patients import Patient
@@ -15,9 +15,31 @@ class PatientService:
     def __init__(self, db_session: Session) -> None:
         self._db = db_session
 
-    def list_patients(self) -> Any:
+    def list_patients(
+        self, sort_by: str | None = None, name_filter: str | None = None
+    ) -> Any:
         logger.debug("Listing patients from database")
-        return paginate(self._db, select(Patient).order_by(Patient.id))
+        sort_field: Any = Patient.id
+
+        # Check if sorting is ascending or descending
+        is_ascending = True if sort_by and not sort_by.startswith("-") else False
+        if not is_ascending and sort_by:
+            sort_by = sort_by[1:]
+
+        if getattr(Patient, sort_by or "", None) is not None:
+            sort_field = getattr(Patient, sort_by)  # type: ignore
+            sort_field = sort_field if is_ascending else sort_field.desc()
+        if name_filter:
+            logger.debug(
+                f"Applying name filter: {name_filter} and sorting by {sort_by}"
+            )
+            return paginate(
+                self._db,
+                select(Patient)
+                .where(func.similarity(Patient.name, name_filter) > 0.1)
+                .order_by(sort_field),
+            )
+        return paginate(self._db, select(Patient).order_by(sort_field))
 
     def get_patient(self, patient_id: int) -> Patient | None:
         logger.debug(f"Fetching patient with ID {patient_id}")
