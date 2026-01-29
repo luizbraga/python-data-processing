@@ -9,7 +9,7 @@ class TestPatientService:
         service = PatientService(db_session)
         patient = service.create_patient(patient_data)
         assert patient.id is not None
-        assert patient.name == "Jane Smith" 
+        assert patient.name == "Jane Smith"
         assert patient.date_of_birth == "1995-06-15"
 
     def test_get_patient(self, db_session: Session, sample_patient: Patient) -> None:
