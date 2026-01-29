@@ -9,10 +9,38 @@ class TestPatientsGetRoutes:
     def test_get_all_patients(
         self, client_with_mock_service: TestClient, mock_patient_service: Mock
     ) -> None:
-        mock_patient_service.list_patients.return_value = []
+        mock_patient_service.list_patients.return_value = {
+            "items": [
+                Patient(
+                    id=1,
+                    first_name="John",
+                    last_name="Doe",
+                    date_of_birth="1990-01-15",
+                    medical_record_number="MRN001234",
+                ),
+                Patient(
+                    id=2,
+                    first_name="Jane",
+                    last_name="Smith",
+                    date_of_birth="1985-07-30",
+                    medical_record_number="MRN001235",
+                ),
+                Patient(
+                    id=3,
+                    first_name="Alice",
+                    last_name="Johnson",
+                    date_of_birth="1978-11-22",
+                    medical_record_number="MRN001236",
+                ),
+            ],
+            "total": 3,
+            "page": 1,
+            "size": 50,
+            "pages": 1,
+        }
         response = client_with_mock_service.get("/patients/")
         assert response.status_code == 200
-        assert isinstance(response.json(), list)
+        assert isinstance(response.json(), dict)
         mock_patient_service.list_patients.assert_called_once()
 
     def test_get_patient_by_id(

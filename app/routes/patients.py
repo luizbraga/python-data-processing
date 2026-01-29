@@ -1,4 +1,7 @@
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi_pagination import Page
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
@@ -13,10 +16,10 @@ def get_patient_service(db: Session = Depends(get_db)) -> PatientService:
     return PatientService(db)
 
 
-@router.get("/", response_model=list[PatientRead])
+@router.get("/", response_model=Page[PatientRead])
 def read_patients(
     service: PatientService = Depends(get_patient_service),
-) -> list[Patient]:
+) -> Page[Patient] | Any:
     patients = service.list_patients()
     return patients
 

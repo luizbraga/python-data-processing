@@ -1,3 +1,8 @@
+from typing import Any
+
+from fastapi_pagination import Page
+from fastapi_pagination.ext.sqlalchemy import paginate
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.patients import Patient
@@ -8,8 +13,8 @@ class PatientService:
     def __init__(self, db_session: Session) -> None:
         self._db = db_session
 
-    def list_patients(self) -> list[Patient]:
-        return self._db.query(Patient).all()
+    def list_patients(self) -> Any:
+        return paginate(self._db, select(Patient).order_by(Patient.id))
 
     def get_patient(self, patient_id: int) -> Patient | None:
         return self._db.query(Patient).filter(Patient.id == patient_id).first()
