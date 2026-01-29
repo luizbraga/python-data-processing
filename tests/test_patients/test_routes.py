@@ -92,6 +92,72 @@ class TestPatientsCreateRoutes:
         mock_patient_service.create_patient.assert_not_called()
         assert response.status_code == 422
 
+    def test_create_patient_normalize_empty_spaces_in_name(
+        self, client_with_mock_service: TestClient, mock_patient_service: Mock
+    ) -> None:
+        patient_data = {
+            "name": "   John    Doe   ",
+            "date_of_birth": "1990-01-15",
+        }
+        normalized_name = "John Doe"
+        mock_patient_service.create_patient.return_value = Patient(
+            id=1, name=normalized_name, date_of_birth=patient_data["date_of_birth"]
+        )
+        response = client_with_mock_service.post("/patients/", json=patient_data)
+        mock_patient_service.create_patient.assert_called_once_with(
+            {
+                "name": normalized_name,
+                "date_of_birth": patient_data["date_of_birth"],
+            }
+        )
+        assert response.status_code == 201
+        assert response.json()["name"] == normalized_name
+
+    def test_create_patient_invalid_date_value(
+        self, client_with_mock_service: TestClient, mock_patient_service: Mock
+    ) -> None:
+        invalid_data = {
+            "name": "John Doe",
+            "date_of_birth": "1990-12-99",  # Invalid date
+        }
+        response = client_with_mock_service.post("/patients/", json=invalid_data)
+        mock_patient_service.create_patient.assert_not_called()
+        assert response.status_code == 422
+        assert (
+            response.json()["detail"][0]["msg"]
+            == "Value error, Day must be between 1 and 31"
+        )
+
+    def test_create_patient_invalid_month_value(
+        self, client_with_mock_service: TestClient, mock_patient_service: Mock
+    ) -> None:
+        invalid_data = {
+            "name": "John Doe",
+            "date_of_birth": "1990-99-30",  # Invalid date
+        }
+        response = client_with_mock_service.post("/patients/", json=invalid_data)
+        mock_patient_service.create_patient.assert_not_called()
+        assert response.status_code == 422
+        assert (
+            response.json()["detail"][0]["msg"]
+            == "Value error, Month must be between 1 and 12"
+        )
+
+    def test_create_patient_invalid_year_value(
+        self, client_with_mock_service: TestClient, mock_patient_service: Mock
+    ) -> None:
+        invalid_data = {
+            "name": "John Doe",
+            "date_of_birth": "1800-12-30",  # Invalid date
+        }
+        response = client_with_mock_service.post("/patients/", json=invalid_data)
+        mock_patient_service.create_patient.assert_not_called()
+        assert response.status_code == 422
+        assert (
+            response.json()["detail"][0]["msg"]
+            == "Value error, Year must be between 1900 and 2026"
+        )
+
 
 class TestPatientsUpdateRoutes:
     def test_update_patient(
