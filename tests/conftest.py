@@ -1,171 +1,77 @@
-"""Test configuration and fixtures.
+from collections.abc import AsyncGenerator
+from unittest.mock import AsyncMock
 
-This module provides test fixtures for the FastAPI application with Alembic models.
+import pytest_asyncio
+from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy_utils import create_database, database_exists, drop_database
 
-Database Setup:
-    - Uses in-memory SQLite for fast, isolated tests
-    - Tables are created/dropped for each test function
-    - All models are registered with SQLAlchemy's Base
-
-Core Fixtures:
-    - setup_database: Auto-creates/drops tables for each test
-    - db_session: Provides database session for each test
-    - client: TestClient with overridden database dependency
-    - sample_patient: Example patient record for testing
-
-Creating New Model Fixtures:
-    To create fixtures for other models, follow this pattern:
-
-    @pytest.fixture
-    def sample_<model_name>(db_session: Session) -> <ModelClass>:
-        '''Create a sample <model> for testing.'''
-        instance = <ModelClass>(
-            field1="value1",
-            field2="value2",
-            # ... all required fields
-        )
-        db_session.add(instance)
-        db_session.commit()
-        db_session.refresh(instance)  # Populate auto-generated fields
-        return instance
-
-    For multiple instances:
-
-    @pytest.fixture
-    def sample_<model_plural>(db_session: Session) -> list[<ModelClass>]:
-        '''Create multiple <model> records for testing.'''
-        instances = [
-            <ModelClass>(field1="value1", ...),
-            <ModelClass>(field1="value2", ...),
-        ]
-        db_session.add_all(instances)
-        db_session.commit()
-        for instance in instances:
-            db_session.refresh(instance)
-        return instances
-
-Usage in Tests:
-    def test_something(client: TestClient, sample_patient: Patient):
-        # The fixture is automatically resolved and injected
-        response = client.get(f"/patients/{sample_patient.id}")
-        assert response.status_code == 200
-"""
-
-from typing import Generator
-from unittest.mock import Mock
-
-import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
-from sqlalchemy.pool import StaticPool
-
-from app.core.db import Base, get_db
+import alembic
+from alembic.config import Config
+from app.config import settings
+from app.core.db import postgres_db
 from app.main import app
-from app.models.patients import Patient  # noqa: F401 - Import models to register them
 from app.routes.patients import get_patient_service
 
-# Shared in-memory SQLite for tests
-engine = create_engine(
-    "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
-)
-TestingSessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
+TEST_DATABASE_URL = f"{settings.database_url}_test"
+settings.database_url = TEST_DATABASE_URL
+
+if database_exists(TEST_DATABASE_URL):
+    drop_database(TEST_DATABASE_URL)
+
+create_database(TEST_DATABASE_URL)
 
 
-@pytest.fixture(scope="function", autouse=True)
-def setup_database() -> Generator[None, None, None]:
-    """Create tables before each test and drop after."""
-    Base.metadata.create_all(bind=engine)
+@pytest_asyncio.fixture(scope="session")
+async def setup_test_database() -> AsyncGenerator[None, None]:
+    await postgres_db.init(TEST_DATABASE_URL)
+    alembic_cfg = Config("alembic.ini")
+    alembic_cfg.set_main_option("sqlalchemy.url", TEST_DATABASE_URL)
+    alembic.command.upgrade(alembic_cfg, "head")
+
     yield
-    Base.metadata.drop_all(bind=engine)
+
+    alembic.command.downgrade(alembic_cfg, "base")
+    await postgres_db.close()
 
 
-@pytest.fixture(scope="function")
-def db_session() -> Generator[Session, None, None]:
-    """Provide a database session for tests."""
-    session = TestingSessionLocal()
-    try:
+@pytest_asyncio.fixture(scope="function", autouse=True)
+async def init_db(setup_test_database: None) -> AsyncGenerator[None, None]:
+    """Initialize database connection for each test."""
+    await postgres_db.init(TEST_DATABASE_URL)
+    yield
+    await postgres_db.close()
+
+
+@pytest_asyncio.fixture(scope="function")
+async def db_session() -> AsyncGenerator[AsyncSession, None]:
+    """Provide a database session for tests with rollback."""
+    if postgres_db.AsyncSessionLocal is None:
+        raise RuntimeError("Database pool is not initialized.")
+    async with postgres_db.AsyncSessionLocal() as session:
         yield session
-    finally:
-        session.close()
+        await session.rollback()
 
 
-@pytest.fixture(scope="function")
-def client(db_session: Session) -> Generator[TestClient, None, None]:
-    """Create a test client with database dependency override."""
-
-    def _get_test_db() -> Generator[Session, None, None]:
-        """Override database dependency to use test session."""
-        yield db_session
-
-    app.dependency_overrides[get_db] = _get_test_db
-
-    with TestClient(app) as test_client:
-        yield test_client
-
-    app.dependency_overrides.clear()
+@pytest_asyncio.fixture(scope="function")
+async def client() -> AsyncGenerator[AsyncClient, None]:
+    """Provide an async HTTP client."""
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        yield ac
 
 
-@pytest.fixture
-def mock_patient_service() -> Mock:
-    """Create a mock PatientService"""
-    return Mock()
-
-
-@pytest.fixture
-def client_with_mock_service(
-    mock_patient_service: Mock,
-) -> Generator[TestClient, None, None]:
+@pytest_asyncio.fixture
+async def client_with_mock_service(
+    mock_patient_service: AsyncMock,
+) -> AsyncGenerator[AsyncClient, None]:
     """Create a test client with mocked service"""
     app.dependency_overrides[get_patient_service] = lambda: mock_patient_service
-    with TestClient(app) as test_client:
+    async with AsyncClient(app=app, base_url="http://test") as test_client:
         yield test_client
     app.dependency_overrides.clear()
 
 
-@pytest.fixture
-def sample_patient(db_session: Session) -> Patient:
-    """Create a sample patient for testing."""
-    patient = Patient(
-        name="John Doe",
-        date_of_birth="1990-01-15",
-    )
-    db_session.add(patient)
-    db_session.commit()
-    db_session.refresh(patient)
-    return patient
-
-
-@pytest.fixture
-def sample_patients(db_session: Session) -> list[Patient]:
-    """Create multiple patients for testing list operations."""
-    patients = [
-        Patient(
-            name="Alice Johnson",
-            date_of_birth="1985-03-20",
-            medical_record_number="MRN001001",
-        ),
-        Patient(
-            name="Bob Smith",
-            date_of_birth="1992-07-10",
-            medical_record_number="MRN001002",
-        ),
-        Patient(
-            name="Carol Williams",
-            date_of_birth="1988-11-05",
-        ),
-    ]
-    db_session.add_all(patients)
-    db_session.commit()
-    for patient in patients:
-        db_session.refresh(patient)
-    return patients
-
-
-@pytest.fixture
-def patient_data() -> dict:
-    """Provide valid patient data dict for create/update operations."""
-    return {
-        "name": "Jane Smith",
-        "date_of_birth": "1995-06-15",
-    }
+@pytest_asyncio.fixture
+def mock_patient_service() -> AsyncMock:
+    """Create a mock PatientService"""
+    return AsyncMock()

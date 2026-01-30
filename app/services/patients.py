@@ -3,7 +3,7 @@ from typing import Any
 
 from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.patients import Patient
 
@@ -12,10 +12,10 @@ logger = logging.getLogger(__name__)
 
 class PatientService:
 
-    def __init__(self, db_session: Session) -> None:
+    def __init__(self, db_session: AsyncSession) -> None:
         self._db = db_session
 
-    def list_patients(
+    async def list_patients(
         self, sort_by: str | None = None, name_filter: str | None = None
     ) -> Any:
         logger.debug("Listing patients from database")
@@ -33,42 +33,47 @@ class PatientService:
             logger.debug(
                 f"Applying name filter: {name_filter} and sorting by {sort_by}"
             )
-            return paginate(
+            return await paginate(
                 self._db,
                 select(Patient)
                 .where(func.similarity(Patient.name, name_filter) > 0.1)
                 .order_by(sort_field),
             )
-        return paginate(self._db, select(Patient).order_by(sort_field))
+        return await paginate(self._db, select(Patient).order_by(sort_field))
 
-    def get_patient(self, patient_id: int) -> Patient | None:
+    async def get_patient(self, patient_id: int) -> Patient | None:
         logger.debug(f"Fetching patient with ID {patient_id}")
-        return self._db.query(Patient).filter(Patient.id == patient_id).first()
+        result = await self._db.execute(
+            select(Patient).filter(Patient.id == patient_id)
+        )
+        return result.scalar_one_or_none()
 
-    def create_patient(self, patient_data: dict) -> Patient:
+    async def create_patient(self, patient_data: dict) -> Patient:
         logger.debug(f"Creating new patient with data {patient_data}")
         patient = Patient(**patient_data)
         self._db.add(patient)
-        self._db.commit()
-        self._db.refresh(patient)
+        await self._db.commit()
+        await self._db.refresh(patient)
         return patient
 
-    def update_patient(self, patient_id: int, patient_data: dict) -> Patient | None:
+    async def update_patient(
+        self, patient_id: int, patient_data: dict
+    ) -> Patient | None:
         logger.info(f"Updating patient with ID {patient_id} with data {patient_data}")
-        patient = self.get_patient(patient_id)
+        patient = await self.get_patient(patient_id)
         if not patient:
             return None
         for key, value in patient_data.items():
             setattr(patient, key, value)
-        self._db.commit()
-        self._db.refresh(patient)
+        await self._db.commit()
+        await self._db.refresh(patient)
         return patient
 
-    def delete_patient(self, patient_id: int) -> bool:
+    async def delete_patient(self, patient_id: int) -> bool:
         logger.info(f"Deleting patient with ID {patient_id}")
-        patient = self.get_patient(patient_id)
+        patient = await self.get_patient(patient_id)
         if not patient:
             return False
-        self._db.delete(patient)
-        self._db.commit()
+        await self._db.delete(patient)
+        await self._db.commit()
         return True
