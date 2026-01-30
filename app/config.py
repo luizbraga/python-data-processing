@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     app_name: str = "Python Data Processing API"
     debug: bool = False
     database_url: str = "sqlite:///./test.db"
+    max_upload_size: int = 10 * 1024 * 1024  # 10MB
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
 

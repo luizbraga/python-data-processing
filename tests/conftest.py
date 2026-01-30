@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
+from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
@@ -12,6 +13,9 @@ from alembic.config import Config
 from app.config import settings
 from app.core.db import postgres_db
 from app.main import app
+from app.models.notes import PatientNote
+from app.models.patients import Patient
+from app.routes.notes import get_note_service
 from app.routes.patients import get_patient_service
 
 TEST_DATABASE_URL = f"{settings.database_url}_test"
@@ -42,6 +46,22 @@ async def init_db(setup_test_database: None) -> AsyncGenerator[None, None]:
     await postgres_db.close()
 
 
+@pytest_asyncio.fixture(scope="function", autouse=True)
+async def cleanup_database() -> AsyncGenerator[None, None]:
+    """Clean up database after each test - runs for ALL tests."""
+    yield
+
+    # Clean up all data after test completes
+    if postgres_db.AsyncSessionLocal is None:
+        return
+
+    async with postgres_db.AsyncSessionLocal() as session:
+        # Delete in correct order (notes first due to foreign key)
+        await session.execute(delete(PatientNote))
+        await session.execute(delete(Patient))
+        await session.commit()
+
+
 @pytest_asyncio.fixture(scope="function")
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
     """Provide a database session for tests with rollback."""
@@ -49,7 +69,6 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
         raise RuntimeError("Database pool is not initialized.")
     async with postgres_db.AsyncSessionLocal() as session:
         yield session
-        await session.rollback()
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -60,17 +79,28 @@ async def client() -> AsyncGenerator[AsyncClient, None]:
 
 
 @pytest_asyncio.fixture
-async def client_with_mock_service(
-    mock_patient_service: AsyncMock,
+async def client_with_mock_patient_service(
+    mock_service: AsyncMock,
 ) -> AsyncGenerator[AsyncClient, None]:
     """Create a test client with mocked service"""
-    app.dependency_overrides[get_patient_service] = lambda: mock_patient_service
+    app.dependency_overrides[get_patient_service] = lambda: mock_service
     async with AsyncClient(app=app, base_url="http://test") as test_client:
         yield test_client
     app.dependency_overrides.clear()
 
 
 @pytest_asyncio.fixture
-def mock_patient_service() -> AsyncMock:
+async def client_with_mock_note_service(
+    mock_service: AsyncMock,
+) -> AsyncGenerator[AsyncClient, None]:
+    """Create a test client with mocked service"""
+    app.dependency_overrides[get_note_service] = lambda: mock_service
+    async with AsyncClient(app=app, base_url="http://test") as test_client:
+        yield test_client
+    app.dependency_overrides.clear()
+
+
+@pytest_asyncio.fixture
+def mock_service() -> AsyncMock:
     """Create a mock PatientService"""
     return AsyncMock()
