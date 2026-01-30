@@ -10,6 +10,25 @@ jobs:
   code-quality:
     runs-on: ubuntu-latest
     
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: database
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    env:
+      DATABASE_URL: postgresql://user:password@localhost:5432/database
+      MAX_UPLOAD_SIZE: 10485760
+    
     steps:
     - uses: actions/checkout@v3
     
@@ -17,6 +36,7 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
+        cache: 'pip'
     
     - name: Install dependencies
       run: |
@@ -31,6 +51,19 @@ jobs:
       run: |
         mypy app
     
-    - name: Run tests
+    - name: Wait for PostgreSQL
       run: |
-        pytest tests/ -v
+        until pg_isready -h localhost -p 5432 -U user; do
+          echo "Waiting for PostgreSQL..."
+          sleep 2
+        done
+    
+    - name: Run Alembic migrations
+      run: |
+        alembic upgrade head
+    
+    - name: Run tests with coverage
+      run: |
+        pytest tests/ -v \
+          --cov=app \
+          --cov-fail-under=90
