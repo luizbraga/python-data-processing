@@ -1,6 +1,7 @@
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Generator
 from unittest.mock import AsyncMock
 
+import pytest
 import pytest_asyncio
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,9 +23,8 @@ if database_exists(TEST_DATABASE_URL):
 create_database(TEST_DATABASE_URL)
 
 
-@pytest_asyncio.fixture(scope="session")
-async def setup_test_database() -> AsyncGenerator[None, None]:
-    await postgres_db.init(TEST_DATABASE_URL)
+@pytest.fixture(scope="session")
+def setup_test_database() -> Generator[None, None, None]:
     alembic_cfg = Config("alembic.ini")
     alembic_cfg.set_main_option("sqlalchemy.url", TEST_DATABASE_URL)
     alembic.command.upgrade(alembic_cfg, "head")
@@ -32,7 +32,6 @@ async def setup_test_database() -> AsyncGenerator[None, None]:
     yield
 
     alembic.command.downgrade(alembic_cfg, "base")
-    await postgres_db.close()
 
 
 @pytest_asyncio.fixture(scope="function", autouse=True)
@@ -56,8 +55,8 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
 @pytest_asyncio.fixture(scope="function")
 async def client() -> AsyncGenerator[AsyncClient, None]:
     """Provide an async HTTP client."""
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        yield ac
+    async with AsyncClient(app=app, base_url="http://test") as app_client:
+        yield app_client
 
 
 @pytest_asyncio.fixture

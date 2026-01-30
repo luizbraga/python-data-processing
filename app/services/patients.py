@@ -1,7 +1,7 @@
 import logging
 from typing import Any
 
-from fastapi_pagination.ext.sqlalchemy import paginate
+from fastapi_pagination.ext.sqlalchemy import apaginate
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -33,13 +33,13 @@ class PatientService:
             logger.debug(
                 f"Applying name filter: {name_filter} and sorting by {sort_by}"
             )
-            return await paginate(
+            return await apaginate(
                 self._db,
                 select(Patient)
                 .where(func.similarity(Patient.name, name_filter) > 0.1)
                 .order_by(sort_field),
             )
-        return await paginate(self._db, select(Patient).order_by(sort_field))
+        return await apaginate(self._db, select(Patient).order_by(sort_field))
 
     async def get_patient(self, patient_id: int) -> Patient | None:
         logger.debug(f"Fetching patient with ID {patient_id}")
