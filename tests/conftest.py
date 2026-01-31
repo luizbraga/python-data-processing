@@ -28,6 +28,12 @@ if database_exists(TEST_DATABASE_URL):
 create_database(TEST_DATABASE_URL)
 
 
+@pytest.fixture(scope="session", autouse=True)
+def configure_test_settings() -> None:
+    """Configure settings for test environment."""
+    settings.openai_api_key = "test_api"
+
+
 @pytest.fixture(scope="session")
 def setup_test_database() -> Generator[None, None, None]:
     alembic_cfg = Config("alembic.ini")
