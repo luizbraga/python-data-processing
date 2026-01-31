@@ -105,15 +105,15 @@ The API will be available at `http://localhost:8000`
 - `POST /patients/` - Create a new patient
 - `PUT /patients/{id}` - Update a patient
 - `DELETE /patients/{id}` - Delete a patient
-- `GET /patients/{id}/summary` - Generate AI-powered patient summary
 
 #### Patient Notes
-- `POST /patients/{id}/notes/` - Create a note (JSON body)
 - `POST /patients/{id}/notes/upload` - Upload a note from file
 - `GET /patients/{id}/notes/` - List all notes for a patient
 - `GET /patients/{id}/notes/{note_id}` - Get a specific note
 - `DELETE /patients/{id}/notes/{note_id}` - Delete a note
-- `DELETE /patients/{id}/notes/` - Delete all notes for a patient
+
+#### Summary Generation
+- `GET /patients/{id}/summary` - Generate AI-powered patient summary
 
 #### Health Check
 - `GET /health` - API health status
@@ -133,7 +133,6 @@ docker-compose up -d
 The API will be available at `http://localhost:8000`
 
 - API documentation (Swagger UI): `http://localhost:8000/docs`
-- Alternative API documentation (ReDoc): `http://localhost:8000/redoc`
 
 ### Running Tests
 
@@ -229,7 +228,6 @@ Environment variables can be set in a `.env` file (see `.env.example`):
 
 ### File Upload Settings
 - `MAX_UPLOAD_SIZE` - Maximum file upload size in bytes (default: `10485760` = 10MB)
-- `ALLOWED_UPLOAD_TYPES` - Allowed file types (default: `["text/plain"]`)
 
 ### LLM Configuration
 - `OPENAI_API_KEY` - OpenAI API key (required if using OpenAI)
