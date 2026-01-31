@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     llm_provider: str = "openai"  # Check llm/backends for supported providers
     llm_model: str = "gpt-4o-mini"
 
+    # Database seeding
+    seed_database_on_startup: bool = False
+    force_reseed: bool = False
+
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
 
 

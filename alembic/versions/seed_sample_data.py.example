@@ -1,0 +1,69 @@
+"""Seed database with sample data
+
+Revision ID: seed_sample_data
+Revises: <your_last_migration>
+Create Date: 2026-01-30
+"""
+from datetime import datetime, timedelta
+from typing import Sequence, Union
+
+from alembic import op
+import sqlalchemy as sa
+from sqlalchemy import Table, MetaData
+
+# revision identifiers, used by Alembic.
+revision: str = 'seed_sample_data'
+down_revision: Union[str, None] = None  # Update this to your last migration ID
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
+
+
+def upgrade() -> None:
+    """Seed database with sample data."""
+    connection = op.get_bind()
+    metadata = MetaData()
+    
+    # Define tables
+    patients = Table('patients', metadata, autoload_with=connection)
+    patient_notes = Table('patient_notes', metadata, autoload_with=connection)
+    
+    # Insert sample patients
+    patients_data = [
+        {"name": "John Doe", "date_of_birth": "1985-03-15"},
+        {"name": "Jane Smith", "date_of_birth": "1990-07-22"},
+        {"name": "Robert Johnson", "date_of_birth": "1978-11-30"},
+    ]
+    
+    result = connection.execute(patients.insert().returning(patients.c.id), patients_data)
+    patient_ids = [row[0] for row in result]
+    
+    # Insert sample notes
+    base_time = datetime.now() - timedelta(days=30)
+    notes_data = [
+        {
+            "patient_id": patient_ids[0],
+            "content": "Initial consultation: Patient presents with hypertension.",
+            "timestamp": base_time,
+        },
+        {
+            "patient_id": patient_ids[0],
+            "content": "Follow-up: Blood pressure improved with medication.",
+            "timestamp": base_time + timedelta(days=14),
+        },
+        {
+            "patient_id": patient_ids[1],
+            "content": "New patient visit: Type 2 Diabetes diagnosis.",
+            "timestamp": base_time + timedelta(days=1),
+        },
+    ]
+    
+    connection.execute(patient_notes.insert(), notes_data)
+
+
+def downgrade() -> None:
+    """Remove sample data."""
+    connection = op.get_bind()
+    
+    # Clean up in reverse order (notes first due to foreign key)
+    connection.execute(sa.text("DELETE FROM patient_notes"))
+    connection.execute(sa.text("DELETE FROM patients"))
