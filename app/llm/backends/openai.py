@@ -28,8 +28,6 @@ class OpenAIProvider(LLMProvider):
                     },
                     {"role": "user", "content": prompt},
                 ],
-                temperature=settings.llm_temperature,
-                max_tokens=settings.llm_max_tokens,
             )
             return response.choices[0].message.content or ""
         except Exception as e:

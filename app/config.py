@@ -17,9 +17,7 @@ class Settings(BaseSettings):
     # LLM settings
     openai_api_key: str | None = None
     llm_provider: str = "openai"  # Check llm/backends for supported providers
-    llm_model: str = "gpt-5-nano"
-    llm_temperature: float = 0.3
-    llm_max_tokens: int = 1000
+    llm_model: str = "gpt-4o-mini"
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
 
