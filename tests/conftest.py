@@ -17,6 +17,7 @@ from app.models.notes import PatientNote
 from app.models.patients import Patient
 from app.routes.notes import get_note_service
 from app.routes.patients import get_patient_service
+from app.routes.summary import get_llm_service, get_summary_service
 
 TEST_DATABASE_URL = f"{settings.database_url}_test"
 settings.database_url = TEST_DATABASE_URL
@@ -101,6 +102,26 @@ async def client_with_mock_note_service(
 
 
 @pytest_asyncio.fixture
+async def client_with_mock_summary_service(
+    mock_service: AsyncMock,
+    mock_llm: AsyncMock,
+) -> AsyncGenerator[AsyncClient, None]:
+    """Create a test client with mocked PatientSummaryService"""
+
+    app.dependency_overrides[get_summary_service] = lambda: mock_service
+    app.dependency_overrides[get_llm_service] = lambda: mock_llm
+    async with AsyncClient(app=app, base_url="http://test") as test_client:
+        yield test_client
+    app.dependency_overrides.clear()
+
+
+@pytest_asyncio.fixture
 def mock_service() -> AsyncMock:
     """Create a mock PatientService"""
+    return AsyncMock()
+
+
+@pytest_asyncio.fixture
+def mock_llm() -> AsyncMock:
+    """Create a mock LLMService"""
     return AsyncMock()

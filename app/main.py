@@ -8,7 +8,7 @@ from app.config import settings
 from app.core.db import postgres_db
 from app.core.logging import setup_logging
 from app.middlewares import LoggingMiddleware
-from app.routes import notes, patients
+from app.routes import notes, patients, summary
 
 setup_logging()
 
@@ -33,3 +33,4 @@ def health_check() -> dict[str, str]:
 
 app.include_router(patients.router)
 app.include_router(notes.router)
+app.include_router(summary.router)
