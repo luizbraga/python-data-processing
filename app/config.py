@@ -9,7 +9,17 @@ class Settings(BaseSettings):
     app_name: str = "Python Data Processing API"
     debug: bool = False
     database_url: str = "sqlite:///./test.db"
+
+    # File upload settings
     max_upload_size: int = 10 * 1024 * 1024  # 10MB
+    allowed_upload_types: list[str] = ["text/plain"]
+
+    # LLM settings
+    openai_api_key: str | None = None
+    llm_provider: str = "openai"  # Check llm/backends for supported providers
+    llm_model: str = "gpt-5-nano"
+    llm_temperature: float = 0.3
+    llm_max_tokens: int = 1000
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
 
