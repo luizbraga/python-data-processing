@@ -142,18 +142,18 @@ async def test_delete_patient_notes(
     assert len(notes.items) == 0
 
 
-async def test_get_all_patient_notes(
+async def test_get_latests_patient_notes(
     db_session: AsyncSession, sample_patient: Patient
 ) -> None:
     service = NoteService(db_session)
     # Create multiple notes
-    for i in range(4):
+    for i in range(10):
         await service.create_note(
             patient_id=sample_patient.id,
             content=f"Note {i}",
             timestamp=datetime.now(),
         )
 
-    notes = await service.get_all_patient_notes(patient_id=sample_patient.id)
-    assert len(notes) == 4
+    notes = await service.get_latests_patient_notes(patient_id=sample_patient.id)
+    assert len(notes) == 5
     assert all(note.patient_id == sample_patient.id for note in notes)

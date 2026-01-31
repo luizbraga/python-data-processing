@@ -59,13 +59,14 @@ class NoteService:
             .order_by(sort_field),
         )
 
-    async def get_all_patient_notes(self, patient_id: int) -> Sequence[PatientNote]:
+    async def get_latests_patient_notes(self, patient_id: int) -> Sequence[PatientNote]:
         """Get all notes for a specific patient without pagination."""
         logger.debug(f"Fetching all notes for patient {patient_id}")
         result = await self._db.execute(
             select(PatientNote)
             .filter(PatientNote.patient_id == patient_id)
             .order_by(PatientNote.timestamp.desc())
+            .limit(5)
         )
         return result.scalars().all()
 

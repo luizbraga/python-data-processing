@@ -35,7 +35,7 @@ class PatientSummaryService:
         if not patient:
             raise ValueError(f"Patient with id {patient_id} not found")
 
-        patient_notes = await self.notes_service.get_all_patient_notes(patient_id)
+        patient_notes = await self.notes_service.get_latests_patient_notes(patient_id)
 
         notes_data = [
             {"timestamp": note.timestamp.isoformat(), "content": note.content}

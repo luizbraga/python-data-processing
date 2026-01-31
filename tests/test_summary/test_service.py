@@ -38,7 +38,7 @@ class TestPatientSummaryService:
         mock_patient.date_of_birth = "1990-01-15"
         mock_patients_service.get_patient.return_value = mock_patient
 
-        mock_notes_service.get_all_patient_notes.return_value = sample_patient_notes
+        mock_notes_service.get_latests_patient_notes.return_value = sample_patient_notes
         mock_llm_service = AsyncMock()
         mock_llm_service.generate_patient_summary.return_value = "Summary text"
 
@@ -53,7 +53,7 @@ class TestPatientSummaryService:
         assert summary["summary"] == "Summary text"
         assert "generated_at" in summary
         mock_patients_service.get_patient.assert_awaited_once_with(mock_patient.id)
-        mock_notes_service.get_all_patient_notes.assert_awaited_once_with(
+        mock_notes_service.get_latests_patient_notes.assert_awaited_once_with(
             mock_patient.id
         )
         mock_llm_service.generate_patient_summary.assert_awaited_once()
