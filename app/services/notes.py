@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import Any
+from typing import Any, Sequence
 
 from fastapi_pagination.ext.sqlalchemy import apaginate
 from sqlalchemy import delete, select
@@ -58,6 +58,16 @@ class NoteService:
             .filter(PatientNote.patient_id == patient_id)
             .order_by(sort_field),
         )
+
+    async def get_all_patient_notes(self, patient_id: int) -> Sequence[PatientNote]:
+        """Get all notes for a specific patient without pagination."""
+        logger.debug(f"Fetching all notes for patient {patient_id}")
+        result = await self._db.execute(
+            select(PatientNote)
+            .filter(PatientNote.patient_id == patient_id)
+            .order_by(PatientNote.timestamp.desc())
+        )
+        return result.scalars().all()
 
     async def get_note(self, note_id: int) -> PatientNote | None:
         """Get a specific note by ID."""
