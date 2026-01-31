@@ -1,58 +1,37 @@
 # Python Data Processing API
 
-Backend application that processes data using modern API development practices with FastAPI.
+A backend application for managing patient data and clinical notes with AI-powered summary generation.
 
 ## Features
 
-- **FastAPI** framework for building APIs
-- **SQLAlchemy** ORM for database operations
-- **Alembic** for database migrations
-- **Pydantic** for data validation and settings management
-- **pytest** for testing
-- **Black** for code formatting
+### Core Functionality
+- **Patient Management** - Full CRUD operations for patient records
+- **Clinical Notes** - Create, view, and delete patient notes with file upload support
+- **AI-Powered Summaries** - Generate comprehensive patient summaries using LLM (OpenAI)
+- **Advanced Search** - Sort and filter patients by various criteria
+
+### Technical Stack
+- **FastAPI** - Modern, fast web framework with automatic API documentation
+- **SQLAlchemy (Async)** - Asynchronous ORM with connection pooling
+- **PostgreSQL** - Production-grade database with full-text search (pg_trgm)
+- **Alembic** - Database migration management
+- **Pydantic** - Data validation and settings management
+- **OpenAI** - LLM integration for clinical summaries
+
+### Quality & Testing
+- **pytest** with async support and 90%+ code coverage
+- **Black** for consistent code formatting
 - **MyPy** for static type checking
-- **GitHub Actions** CI/CD for code quality checks
-
-## Project Structure
-
-```
-├── app/                   # Application source code
-│   ├── __init__.py
-│   ├── main.py            # FastAPI application and routes
-│   ├── config.py          # Application settings
-│   ├── core/              # Core functionality
-│   ├── models/            # SQLAlchemy models
-│   ├── routes/            # API route handlers
-│   └── schemas/           # Pydantic schemas
-├── tests/                 # Test files
-│   ├── __init__.py
-│   ├── conftest.py        # Test fixtures
-│   └── test_main.py       # API tests
-├── alembic/               # Database migrations
-│   ├── versions/          # Migration scripts
-│   ├── env.py             # Alembic environment
-│   └── script.py.mako     # Migration template
-├── .vscode/               # VS Code settings
-│   └── settings.json
-├── Dockerfile             # Docker container configuration
-├── docker-compose.yml     # Docker Compose orchestration
-├── requirements.txt       # Python dependencies
-├── pyproject.toml         # Tool configurations
-├── alembic.ini            # Alembic configuration
-├── .env.example           # Example environment variables
-├── .env                   # Environment variables (not in git)
-├── test.db                # SQLite database (development)
-├── LICENSE                # License file
-└── README.md 
-```
+- **GitHub Actions** CI/CD with automated testing and coverage reporting
 
 ## Setup
 
 ### Prerequisites
 
 - Python 3.11 or higher
-- pip
+- PostgreSQL 15 or higher
 - Docker and Docker Compose (optional, for containerized deployment)
+- OpenAI or Anthropic API key (for AI summary generation)
 
 #### Local Development
 
@@ -78,8 +57,16 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-5. Initialize the database (optional - tables are created automatically):
+Edit `.env` and configure:
+- `DATABASE_URL` - PostgreSQL connection string
+- `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` - Your LLM provider API key
+
+5. Set up the database:
 ```bash
+# Create database
+createdb your_database_name
+
+# Run migrations
 alembic upgrade head
 ```
 
@@ -110,6 +97,27 @@ The API will be available at `http://localhost:8000`
 
 ## Usage
 
+### API Endpoints
+
+#### Patients
+- `GET /patients/` - List all patients (with pagination and sorting)
+- `GET /patients/{id}` - Get a specific patient
+- `POST /patients/` - Create a new patient
+- `PUT /patients/{id}` - Update a patient
+- `DELETE /patients/{id}` - Delete a patient
+- `GET /patients/{id}/summary` - Generate AI-powered patient summary
+
+#### Patient Notes
+- `POST /patients/{id}/notes/` - Create a note (JSON body)
+- `POST /patients/{id}/notes/upload` - Upload a note from file
+- `GET /patients/{id}/notes/` - List all notes for a patient
+- `GET /patients/{id}/notes/{note_id}` - Get a specific note
+- `DELETE /patients/{id}/notes/{note_id}` - Delete a note
+- `DELETE /patients/{id}/notes/` - Delete all notes for a patient
+
+#### Health Check
+- `GET /health` - API health status
+
 ### Running the Development Server
 
 #### Local
@@ -119,7 +127,7 @@ uvicorn app.main:app --reload
 
 #### Docker
 ```bash
-docker run -p 8000:8000 python-data-processing
+docker-compose up -d
 ```
 
 The API will be available at `http://localhost:8000`
@@ -129,13 +137,24 @@ The API will be available at `http://localhost:8000`
 
 ### Running Tests
 
+Using Docker environment, you need to enter the bash first and then execute `pytest`
+```bash
+docker-compose exec app /bin/bash -it
+```
+
 ```bash
 pytest
 ```
 
-Run with coverage:
+Run with coverage (enforces 90% minimum):
 ```bash
-pytest --cov=app tests/
+pytest --cov=app --cov-report=term-missing --cov-fail-under=90 tests/
+```
+
+Generate HTML coverage report:
+```bash
+pytest --cov=app --cov-report=html tests/
+open htmlcov/index.html
 ```
 
 ### Code Quality Checks
@@ -188,19 +207,76 @@ This project uses:
 
 ### Continuous Integration
 
-The project uses GitHub Actions to automatically run:
-- Black formatting checks
-- MyPy type checks
+The project uses GitHub Actions to automatically run on every push and pull request:
+- **Code formatting** checks with Black
+- **Type checking** with MyPy
+- **Database migrations** with Alembic
+- **Full test suite** with pytest
+- **Coverage reporting** to Codecov (90% minimum required)
 
-These checks run on every push and pull request to `main`, `master`, and `develop` branches.
+All checks must pass before merging to main branches.
 
 ## Configuration
 
 Environment variables can be set in a `.env` file (see `.env.example`):
 
-- `DATABASE_URL` - Database connection string (default: `sqlite:///./test.db`)
-- `APP_NAME` - Application name
-- `DEBUG` - Debug mode (default: `False`)
+### Database Configuration
+- `DATABASE_URL` - PostgreSQL connection string (e.g., `postgresql://user:password@localhost:5432/dbname`)
+
+### Application Settings
+- `APP_NAME` - Application name (default: `Patient Data Processing`)
+- `DEBUG` - Debug mode (default: `false`)
+
+### File Upload Settings
+- `MAX_UPLOAD_SIZE` - Maximum file upload size in bytes (default: `10485760` = 10MB)
+- `ALLOWED_UPLOAD_TYPES` - Allowed file types (default: `["text/plain"]`)
+
+### LLM Configuration
+- `OPENAI_API_KEY` - OpenAI API key (required if using OpenAI)
+- `LLM_PROVIDER` - LLM provider to use `openai`
+- `LLM_MODEL` - Model name (default: `gpt-4o-mini`)
+
+## Performance Optimization
+
+### AI Summary Generation
+The AI summary endpoint can take 3-5 seconds to respond. For better performance:
+
+1. **Use faster models**: Switch to `gpt-4o-mini` instead of `gpt-4`
+2. **Enable caching**: Summaries are cached for 1 hour by default
+3. **Limit notes**: Only the 50 most recent notes are used for summaries
+4. **Streaming** (optional): Implement streaming responses for better UX
+
+### Database Performance
+- Connection pooling is enabled by default (10 connections, 20 max overflow)
+- PostgreSQL `pg_trgm` extension is used for efficient full-text search
+- Async SQLAlchemy provides non-blocking database operations
+
+## Architecture
+
+### Layered Architecture
+```
+Routes (API Layer)
+    ↓
+Services (Business Logic)
+    ↓
+Models (Data Layer)
+    ↓
+Database
+```
+
+### Key Design Patterns
+- **Dependency Injection**: Services are injected via FastAPI's `Depends()`
+- **Repository Pattern**: Services encapsulate database operations
+- **Factory Pattern**: LLM providers use factory pattern for flexibility
+- **Async/Await**: Full async support from API to database
+
+## Testing Strategy
+
+- **Unit Tests**: Test individual service methods
+- **Integration Tests**: Test API endpoints with real database
+- **Mock Tests**: Mock external services (LLM providers)
+- **Fixtures**: Reusable test data and database setup
+- **Coverage**: Minimum 90% code coverage enforced in CI
 
 ## License
 
